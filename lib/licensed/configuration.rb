@@ -25,6 +25,7 @@ module Licensed
 
       self["sources"] ||= {}
       self["reviewed"] ||= {}
+      self["undetected_license_overrides"] ||= {}
       self["ignored"] ||= {}
       self["allowed"] ||= []
       self["root"] = AppConfiguration.root_for(self)

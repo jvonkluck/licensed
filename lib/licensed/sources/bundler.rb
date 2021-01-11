@@ -49,9 +49,11 @@ module Licensed
       class Dependency < Licensed::Dependency
         attr_reader :loaded_from
 
-        def initialize(name:, version:, path:, loaded_from:, errors: [], metadata: {})
+        def initialize(name:, version:, path:, loaded_from:, errors: [], metadata: {}, specified_license:)
           @loaded_from = loaded_from
-          super name: name, version: version, path: path, errors: errors, metadata: metadata
+          super(name: name, version: version, path: path, errors: errors, metadata: metadata).tap do
+            @license = specified_license if (@license.nil? && specified_license)
+          end
         end
 
         # Load a package manager file from the base Licensee::Projects::FsProject
@@ -98,7 +100,8 @@ module Licensed
                 "type"     => Bundler.type,
                 "summary"  => spec.summary,
                 "homepage" => spec.homepage
-              }
+              },
+              specified_license: undetected_override_license(spec.name)
             )
           end
         end
@@ -298,6 +301,13 @@ module Licensed
       def ruby_command_args(*args)
         return Array(args) unless Licensed::Shell.tool_available?(bundler_exe)
         [bundler_exe, "exec", *args]
+      end
+
+      # Checks configuration for manually specified license in case of a completely
+      # missing license in the gem spec
+      def undetected_override_license(gem_name)
+        license_key = @config['undetected_license_overrides'][self.class.type][gem_name]
+        license_key ? Licensee::License.new(license_key) : nil
       end
 
       private
